@@ -1,0 +1,13 @@
+streamlit
+
+yfinance
+
+pandas
+
+plotly
+
+openai==0.28
+
+beautifulsoup4
+
+requests
