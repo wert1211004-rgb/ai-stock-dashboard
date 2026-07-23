@@ -36,9 +36,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-NAVER_CLIENT_ID = st.secrets"Tii2e0V8YDuxnnqKXCpu" 
-NAVER_CLIENT_SECRET = st.secrets"4YpN5BkGcw" 
-OPENAI_API_KEY = st.secrets"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" 
+NAVER_CLIENT_ID = st.secrets["NAVER_CLIENT_ID"]
+NAVER_CLIENT_SECRET = st.secrets["NAVER_CLIENT_SECRET"]
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 if OPENAI_API_KEY: openai.api_key = OPENAI_API_KEY
 
 # ==========================================
