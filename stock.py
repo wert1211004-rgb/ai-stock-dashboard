@@ -14,25 +14,110 @@ import re
 # ==========================================
 # 1. 환경 설정 및 HTS 프로페셔널 테마 (CSS)
 # ==========================================
-st.set_page_config(page_title="Institutional Equity Research Terminal", layout="wide")
+st.set_page_config(page_title="Institutional Equity Research Terminal", page_icon="📊", layout="wide")
 
 st.markdown("""
 <style>
-    .stApp { background-color: #f1f5f9; }
-    h1, h2, h3, h4, h5 { color: #0f172a; font-family: 'Malgun Gothic', sans-serif; font-weight: 700; }
-    .section-card { background-color: #ffffff; padding: 24px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); margin-bottom: 24px; }
-    .stButton>button { background-color: #1e293b; color: white; border-radius: 2px; border: none; font-weight: bold; border: 1px solid #334155; }
-    .stButton>button:hover { background-color: #334155; color: white; }
-    .trade-box { background-color: #f8fafc; padding: 15px; border: 1px solid #cbd5e1; margin-bottom: 10px; border-radius: 4px; }
-    .bullish-box { background-color: #f0f7ff; border-left: 4px solid #2563eb; padding: 15px; margin-bottom: 10px; border-radius: 4px; }
-    .bearish-box { background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 10px; border-radius: 4px; }
-    .info-text { color: #475569; font-size: 0.9em; }
-    .macro-ticker { background-color: #0f172a; color: #f8fafc; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; font-family: 'Courier New', Courier, monospace;}
-    .positive-val { color: #ef4444; }
-    .negative-val { color: #3b82f6; }
-    .disclaimer { font-size: 0.8em; color: #6b7280; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 40px; }
-    .news-item { padding: 8px 0; border-bottom: 1px dashed #cbd5e1; }
-    .news-item:last-child { border-bottom: none; }
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg-base: #0a0e14;
+    --bg-surface: #11161f;
+    --bg-elevated: #171d29;
+    --border-hairline: #242c3a;
+    --border-strong: #333c4d;
+    --text-primary: #eef1f6;
+    --text-secondary: #8993a4;
+    --text-tertiary: #5b6472;
+    --accent-gold: #c9a227;
+    --accent-gold-dim: rgba(201, 162, 39, 0.35);
+    --rise: #e5484d;
+    --fall: #4c8bf5;
+    --rise-bg: rgba(229, 72, 77, 0.08);
+    --fall-bg: rgba(76, 139, 245, 0.08);
+}
+
+html, body, .stApp { background-color: var(--bg-base) !important; }
+.stApp, .stApp p, .stApp span, .stApp label, .stMarkdown { font-family: 'Noto Sans KR', sans-serif; color: var(--text-primary); }
+[data-testid="stHeader"] { background-color: transparent; }
+.block-container { padding-top: 1.6rem; }
+
+h1, h2, h3, h4, h5 { color: var(--text-primary); font-family: 'Noto Sans KR', sans-serif; font-weight: 900; letter-spacing: -0.01em; }
+
+/* --- Sidebar --- */
+section[data-testid="stSidebar"] { background-color: var(--bg-surface); border-right: 1px solid var(--border-hairline); }
+section[data-testid="stSidebar"] * { color: var(--text-secondary); }
+section[data-testid="stSidebar"] h3 { color: var(--accent-gold); font-size: 0.78em; letter-spacing: 0.12em; font-weight: 700; }
+
+/* --- Hero --- */
+.hero-wrap { display: flex; align-items: center; gap: 14px; margin: 2px 0 4px 0; }
+.hero-live { display: inline-flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72em; letter-spacing: 0.14em; color: var(--rise); border: 1px solid rgba(229,72,77,0.35); padding: 4px 9px; border-radius: 2px; white-space: nowrap; }
+.hero-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--rise); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.hero-title { font-size: 2.05em; font-weight: 900; letter-spacing: -0.02em; margin: 0; }
+.hero-sub { color: var(--text-tertiary); font-family: 'IBM Plex Mono', monospace; font-size: 0.8em; letter-spacing: 0.03em; margin: 4px 0 0 0; }
+
+/* --- Ticker tape (signature element) --- */
+.ticker-tape-wrap { overflow: hidden; background: var(--bg-surface); border-top: 1px solid var(--border-hairline); border-bottom: 1px solid var(--border-hairline); padding: 11px 0; margin: 14px 0 26px 0; }
+.ticker-tape-track { display: flex; width: max-content; animation: ticker-scroll 30s linear infinite; }
+.ticker-tape-wrap:hover .ticker-tape-track { animation-play-state: paused; }
+@keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.ticker-item { display: flex; align-items: baseline; gap: 9px; font-family: 'IBM Plex Mono', monospace; padding: 0 30px; border-right: 1px solid var(--border-hairline); white-space: nowrap; }
+.ticker-name { color: var(--text-tertiary); font-size: 0.72em; letter-spacing: 0.08em; }
+.ticker-price { color: var(--text-primary); font-weight: 600; font-size: 0.94em; }
+.ticker-delta.up { color: var(--rise); }
+.ticker-delta.down { color: var(--fall); }
+
+/* --- Numbered section headers --- */
+.section-head { display: flex; align-items: baseline; gap: 12px; margin: 8px 0 16px 0; padding-bottom: 11px; border-bottom: 1px solid var(--border-hairline); }
+.section-num { font-family: 'IBM Plex Mono', monospace; color: var(--accent-gold); font-size: 0.85em; font-weight: 700; letter-spacing: 0.05em; }
+.section-title-en { font-family: 'IBM Plex Mono', monospace; color: var(--text-tertiary); font-size: 0.72em; letter-spacing: 0.14em; text-transform: uppercase; }
+.section-title-kr { font-size: 1.12em; font-weight: 700; color: var(--text-primary); }
+
+/* --- Cards & containers --- */
+.section-card, [data-testid="stVerticalBlockBorderWrapper"] { background-color: var(--bg-surface) !important; border: 1px solid var(--border-hairline) !important; border-radius: 3px !important; }
+.section-card { padding: 22px; margin-bottom: 22px; }
+
+.trade-box { background-color: var(--bg-elevated); border: 1px solid var(--border-hairline); border-left: 2px solid var(--accent-gold); padding: 16px; border-radius: 2px; margin-bottom: 10px; }
+.bullish-box { background-color: var(--rise-bg); border-left: 3px solid var(--rise); padding: 16px; border-radius: 2px; margin-bottom: 10px; }
+.bearish-box { background-color: var(--fall-bg); border-left: 3px solid var(--fall); padding: 16px; border-radius: 2px; margin-bottom: 10px; }
+.info-text { color: var(--text-secondary); font-size: 0.9em; }
+.positive-val { color: var(--rise); font-family: 'IBM Plex Mono', monospace; }
+.negative-val { color: var(--fall); font-family: 'IBM Plex Mono', monospace; }
+
+.news-item { padding: 10px 0; border-bottom: 1px dashed var(--border-hairline); }
+.news-item:last-child { border-bottom: none; }
+.news-item a { color: var(--text-primary) !important; text-decoration: none !important; }
+.news-item a:hover { color: var(--accent-gold) !important; }
+
+.disclaimer { font-size: 0.78em; color: var(--text-tertiary); text-align: center; border-top: 1px solid var(--border-hairline); padding-top: 20px; margin-top: 40px; line-height: 1.7; }
+
+/* --- Buttons --- */
+.stButton>button, .stDownloadButton>button, .stLinkButton>a {
+    background-color: transparent !important; color: var(--accent-gold) !important;
+    border: 1px solid var(--accent-gold-dim) !important; border-radius: 2px !important;
+    font-weight: 600 !important; font-family: 'IBM Plex Mono', monospace !important;
+    letter-spacing: 0.03em; transition: all 0.15s ease;
+}
+.stButton>button:hover, .stDownloadButton>button:hover, .stLinkButton>a:hover {
+    background-color: var(--accent-gold) !important; color: var(--bg-base) !important; border-color: var(--accent-gold) !important;
+}
+
+/* --- Inputs --- */
+.stTextInput input, .stSelectbox div[data-baseweb="select"] > div {
+    background-color: var(--bg-elevated) !important; border: 1px solid var(--border-hairline) !important; color: var(--text-primary) !important;
+}
+
+/* --- Metrics --- */
+div[data-testid="stMetric"] { background-color: var(--bg-elevated); border: 1px solid var(--border-hairline); border-radius: 3px; padding: 12px 16px; }
+div[data-testid="stMetricValue"] { font-family: 'IBM Plex Mono', monospace; color: var(--text-primary); }
+
+/* --- Tabs --- */
+.stTabs [data-baseweb="tab-list"] { gap: 4px; border-bottom: 1px solid var(--border-hairline); }
+.stTabs [data-baseweb="tab"] { color: var(--text-tertiary); font-family: 'IBM Plex Mono', monospace; font-size: 0.85em; }
+.stTabs [aria-selected="true"] { color: var(--accent-gold) !important; border-bottom-color: var(--accent-gold) !important; }
+
+hr { border-color: var(--border-hairline) !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -370,33 +455,46 @@ def draw_professional_chart(df):
     
     df['MA20'] = df['Close'].rolling(window=20).mean()
     df['MA60'] = df['Close'].rolling(window=60).mean()
-    fig.add_trace(go.Scatter(x=df.index, y=df['MA20'], line=dict(color='#f59e0b', width=1.5), name='20 MA'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df.index, y=df['MA60'], line=dict(color='#10b981', width=1.5), name='60 MA'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df.index, y=df['MA20'], line=dict(color='#c9a227', width=1.5), name='20 MA'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df.index, y=df['MA60'], line=dict(color='#8993a4', width=1.5), name='60 MA'), row=1, col=1)
     
-    colors = ['#ef4444' if row['Close'] >= row['Open'] else '#3b82f6' for _, row in df.iterrows()]
+    colors = ['#e5484d' if row['Close'] >= row['Open'] else '#4c8bf5' for _, row in df.iterrows()]
     fig.add_trace(go.Bar(x=df.index, y=df['Volume'], marker_color=colors, name='Volume'), row=2, col=1)
     
-    fig.update_layout(xaxis_rangeslider_visible=False, margin=dict(l=10, r=10, t=10, b=10), height=550, showlegend=False, plot_bgcolor='#ffffff', paper_bgcolor='#ffffff')
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#f1f5f9')
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#f1f5f9')
+    fig.update_layout(xaxis_rangeslider_visible=False, margin=dict(l=10, r=10, t=10, b=10), height=550, showlegend=False,
+                       plot_bgcolor='#11161f', paper_bgcolor='#11161f', font=dict(color='#8993a4', family='IBM Plex Mono'))
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#242c3a', zeroline=False)
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#242c3a', zeroline=False)
     return fig
+
+def render_section_header(num, title_en, title_kr):
+    st.markdown(f"""
+    <div class='section-head'>
+        <span class='section-num'>{num}</span>
+        <span class='section-title-en'>{title_en}</span>
+        <span class='section-title-kr'>{title_kr}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
 def draw_gauge(score):
     fig = go.Figure(go.Indicator(
         mode = "gauge+number",
         value = score,
         domain = {'x': [0, 1], 'y': [0, 1]},
-        title = {'text': "AI Score", 'font': {'size': 14, 'color': '#334155'}},
+        title = {'text': "AI SCORE", 'font': {'size': 13, 'color': '#8993a4', 'family': 'IBM Plex Mono'}},
+        number = {'font': {'color': '#eef1f6', 'family': 'IBM Plex Mono'}},
         gauge = {
-            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#cbd5e1"},
-            'bar': {'color': "#1e293b"},
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#5b6472", 'tickfont': {'color': '#5b6472'}},
+            'bar': {'color': "#c9a227"},
+            'bgcolor': "#171d29",
+            'bordercolor': "#242c3a",
             'steps' : [
-                {'range': [0, 40], 'color': "#fee2e2"},
-                {'range': [40, 60], 'color': "#f1f5f9"},
-                {'range': [60, 100], 'color': "#dbeafe"}],
+                {'range': [0, 40], 'color': "rgba(76,139,245,0.15)"},
+                {'range': [40, 60], 'color': "#171d29"},
+                {'range': [60, 100], 'color': "rgba(229,72,77,0.15)"}],
         }
     ))
-    fig.update_layout(height=220, margin=dict(l=20, r=20, t=30, b=10))
+    fig.update_layout(height=220, margin=dict(l=20, r=20, t=30, b=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
     return fig
 
 # ==========================================
@@ -407,18 +505,32 @@ def main():
     news_count = st.sidebar.slider("[ 표시할 뉴스 개수 ]", min_value=3, max_value=10, value=3, step=1)
     st.sidebar.markdown("---")
 
+    st.markdown("""
+    <div class='hero-wrap'>
+        <span class='hero-title'>Institutional Equity Research Terminal</span>
+        <span class='hero-live'><span class='hero-live-dot'></span>LIVE</span>
+    </div>
+    <div class='hero-sub'>SECTOR-LEADER VALUE-CHAIN ANALYSIS &nbsp;/&nbsp; KOSPI · KOSDAQ</div>
+    """, unsafe_allow_html=True)
+
     macro_data = get_macro_data()
     if macro_data:
-        cols = st.columns(4)
-        for idx, (name, data) in enumerate(macro_data.items()):
-            color_class = "positive-val" if data['diff'] >= 0 else "negative-val"
+        items_html = ""
+        for name, data in macro_data.items():
+            direction = "up" if data['diff'] >= 0 else "down"
             sign = "+" if data['diff'] >= 0 else ""
-            html = f"<div class='macro-ticker'>{name} : {data['price']:,.2f} <span class='{color_class}'>({sign}{data['pct']:.2f}%)</span></div>"
-            cols[idx].markdown(html, unsafe_allow_html=True)
-            
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.title("Institutional Equity Research Terminal")
-    
+            items_html += f"""<div class='ticker-item'>
+                <span class='ticker-name'>{name}</span>
+                <span class='ticker-price'>{data['price']:,.2f}</span>
+                <span class='ticker-delta {direction}'>{sign}{data['diff']:,.2f} ({sign}{data['pct']:.2f}%)</span>
+            </div>"""
+        # duplicated once for a seamless looping marquee
+        st.markdown(f"""
+        <div class='ticker-tape-wrap'>
+            <div class='ticker-tape-track'>{items_html}{items_html}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     st.markdown("### [ 나의 관심 종목 실시간 속보 ]")
     with st.container(border=True):
         col_w1, col_w2 = st.columns([8, 2])
@@ -448,14 +560,14 @@ def main():
     leader_ticker = leader_data["ticker"]
     custom_suhyeju_list = leader_data["수혜주"]
     
-    st.markdown("### 1. Sector Macro Analysis")
+    render_section_header("01", "SECTOR MACRO ANALYSIS", "섹터 매크로 진단")
     with st.container(border=True):
         st.markdown(f"#### {theme} Macro Indicator")
         st.info(MARKET_THEMES[theme]["macro"])
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown("### 2. Sector Leader Research")
+    render_section_header("02", "SECTOR LEADER RESEARCH", "섹터 대장주 리서치")
     with st.container(border=True):
         st.subheader(f"[Sector Leader] {leader_name.split(' ')[0]}")
         
@@ -497,7 +609,7 @@ def main():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown(f"### 3. Value Chain Partners ({leader_name.split(' ')[0]} 핵심 공급망)")
+    render_section_header("03", "VALUE CHAIN PARTNERS", f"{leader_name.split(' ')[0]} 핵심 공급망")
     st.caption(f"{leader_name.split(' ')[0]}와 직접적인 거래 및 수혜 관계가 있는 파트너사 목록입니다.")
     
     with st.container(border=True):
