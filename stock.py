@@ -362,6 +362,7 @@ def generate_ai_report_parsed(ticker_name, price, news_list):
     except Exception as e: return 50, "통신 지연", f"에러: {e}"
 
 def draw_professional_chart(df):
+    df = df.copy()
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.75, 0.25])
     
     fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], 
@@ -449,7 +450,7 @@ def main():
     
     st.markdown("### 1. Sector Macro Analysis")
     with st.container(border=True):
-        st.markdown(f"#### {theme.split(' ')[1]} Macro Indicator")
+        st.markdown(f"#### {theme} Macro Indicator")
         st.info(MARKET_THEMES[theme]["macro"])
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -458,7 +459,14 @@ def main():
     with st.container(border=True):
         st.subheader(f"[Sector Leader] {leader_name.split(' ')[0]}")
         
+        chart_key = f"show_chart_{theme}_{leader_ticker}"
+        if chart_key not in st.session_state:
+            st.session_state[chart_key] = False
+
         if st.button(f"[{leader_name.split(' ')[0]}] 차트 및 리서치 실행", use_container_width=True):
+            st.session_state[chart_key] = True
+
+        if st.session_state[chart_key]:
             with st.spinner("마켓 데이터 로딩 중..."):
                 df = yf.Ticker(leader_ticker).history(period="6mo")
                 if not df.empty:
@@ -494,14 +502,14 @@ def main():
     
     with st.container(border=True):
         for idx, su in enumerate(custom_suhyeju_list):
-            toggle_key = f"toggle_{su['ticker']}"
+            toggle_key = f"toggle_{theme}_{leader_ticker}_{su['ticker']}"
             if toggle_key not in st.session_state:
                 st.session_state[toggle_key] = False
                 
             col1, col2 = st.columns([6, 2])
             with col1: st.markdown(f"#### {su['name']} <span class='info-text'>({su['relation']})</span>", unsafe_allow_html=True)
             with col2: 
-                if st.button("[ 상세 리서치 토글 ]", key=f"btn_{su['ticker']}", use_container_width=True):
+                if st.button("[ 상세 리서치 토글 ]", key=f"btn_{theme}_{leader_ticker}_{su['ticker']}", use_container_width=True):
                     st.session_state[toggle_key] = not st.session_state[toggle_key]
 
             if st.session_state[toggle_key]:
@@ -537,8 +545,8 @@ def main():
                             mcap = f_info['marketCap'] / 1000000000000 if f_info['marketCap'] else 0
                             st.markdown(f"<div class='trade-box info-text'><b>[ 실시간 재무 스냅샷 ]</b> 시가총액: {mcap:.1f}조 원 | PER: {f_info['trailingPE']} | PBR: {f_info['priceToBook']} | 52주 고가: {f_info['fiftyTwoWeekHigh']} | 52주 저가: {f_info['fiftyTwoWeekLow']}</div>", unsafe_allow_html=True)
 
-                    su_ai_key = f"ai_report_{su['ticker']}"
-                    if st.button(f"[{su['name']}] 실시간 AI 투자 심리 분석", key=f"run_ai_{su['ticker']}"):
+                    su_ai_key = f"ai_report_{theme}_{leader_ticker}_{su['ticker']}"
+                    if st.button(f"[{su['name']}] 실시간 AI 투자 심리 분석", key=f"run_ai_{theme}_{leader_ticker}_{su['ticker']}"):
                         st.session_state[su_ai_key] = True
 
                     if st.session_state.get(su_ai_key, False):
@@ -547,7 +555,7 @@ def main():
                             score, bullish, bearish = generate_ai_report_parsed(su['name'], su_price, su_news)
                             
                             ac1, ac2 = st.columns([2, 5])
-                            with ac1: st.plotly_chart(draw_gauge(score), use_container_width=True, key=f"gauge_{su['ticker']}")
+                            with ac1: st.plotly_chart(draw_gauge(score), use_container_width=True, key=f"gauge_{theme}_{leader_ticker}_{su['ticker']}")
                             
                             with ac2:
                                 st.markdown(f"<div class='bullish-box'><strong>[ 긍정적 모멘텀 ]</strong><br>{bullish}</div>", unsafe_allow_html=True)
