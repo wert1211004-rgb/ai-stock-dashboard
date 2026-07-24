@@ -26,6 +26,7 @@ st.markdown("""
     .trade-box { background-color: #f8fafc; padding: 15px; border: 1px solid #cbd5e1; margin-bottom: 10px; border-radius: 4px; }
     .bullish-box { background-color: #f0f7ff; border-left: 4px solid #2563eb; padding: 15px; margin-bottom: 10px; border-radius: 4px; }
     .bearish-box { background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 10px; border-radius: 4px; }
+    .comment-box { background-color: #f8fafc; border: 1px dashed #94a3b8; padding: 12px 15px; margin-bottom: 10px; border-radius: 4px; font-weight: 600; color: #0f172a; }
     .info-text { color: #475569; font-size: 0.9em; }
     .macro-ticker { background-color: #0f172a; color: #f8fafc; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; font-family: 'Courier New', Courier, monospace;}
     .positive-val { color: #ef4444; }
@@ -360,7 +361,7 @@ def get_real_target_price(ticker):
         return "컨센서스 없음"
     except: return "조회 지연"
 
-@st.cache_data(ttl=1800)
+@st.cache_data(ttl=900)
 def get_recent_news(name, display_count=3):
     if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET: return []
     encText = urllib.parse.quote(f"{name} 주식")
@@ -374,34 +375,54 @@ def get_recent_news(name, display_count=3):
             return [{"title": i['title'].replace('<b>','').replace('</b>',''), "url": i['link']} for i in data['items']]
     except: return []
 
-@st.cache_data(ttl=1800)
+@st.cache_data(ttl=900)
 def generate_ai_report_parsed(ticker_name, price, news_list):
     if not OPENAI_API_KEY:
         time.sleep(1)
-        return 50, f"[{ticker_name}] 실적 개선 기대감 및 저평가 매력 부각", "[리스크] 전방 산업 수요 둔화 등 변동성 주의"
+        return (
+            50,
+            f"[{ticker_name}] 실적 개선 기대감 및 저평가 매력 부각",
+            "[리스크] 전방 산업 수요 둔화 등 변동성 주의",
+            f"{ticker_name}, 호재와 리스크가 공존하는 중립적 흐름 예상",
+        )
     
-    titles = [n['title'] for n in news_list]
+    # 네이버 뉴스 제목의 선행 대괄호 태그([특징주], [포토], [표] 등) 제거.
+    # 이런 태그가 그대로 프롬프트에 들어가면 종목별로(특히 삼성전자처럼 기사량이 많은
+    # 대형주) 모델이 응답 포맷의 대괄호 태그([SCORE]/[BULLISH]/[BEARISH])와 혼동을
+    # 일으켜 형식을 어기는 경우가 있어, 파싱용 정규식이 매칭에 실패했었음.
+    titles = [re.sub(r'^\s*\[[^\]]{1,10}\]\s*', '', n['title']).strip() for n in news_list]
     prompt = f"""
     분석 대상: {ticker_name}({price}원). 뉴스({', '.join(titles)})를 바탕으로 분석.
-    반드시 아래 형식 지킬 것.
+    반드시 아래 형식만 사용할 것. 다른 대괄호나 마크다운은 쓰지 말 것.
     
     [SCORE]0부터 100사이 숫자[/SCORE]
     [BULLISH]상승 모멘텀/호재 3줄 요약[/BULLISH]
     [BEARISH]하락 리스크/악재 3줄 요약[/BEARISH]
+    [COMMENT]긍정/부정 요인을 종합한 AI 총평 한 문장 (50자 이내)[/COMMENT]
     """
     try:
-        response = openai.ChatCompletion.create(model="gpt-4", messages=[{"role": "system", "content": prompt}], temperature=0.1)
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": prompt}],
+            temperature=0.1,
+            max_tokens=700,
+        )
         text = response.choices[0].message.content
-        
-        score_match = re.search(r'\[SCORE\](\d+)\[/SCORE\]', text)
-        bullish_match = re.search(r'\[BULLISH\](.*?)\[/BULLISH\]', text, re.DOTALL)
-        bearish_match = re.search(r'\[BEARISH\](.*?)\[/BEARISH\]', text, re.DOTALL)
-        
+
+        # 대소문자/공백에 관대한 정규식 (모델이 [Score], [ SCORE ] 등으로 응답해도 매칭)
+        score_match = re.search(r'\[\s*SCORE\s*\]\s*(\d+)\s*\[\s*/\s*SCORE\s*\]', text, re.IGNORECASE)
+        bullish_match = re.search(r'\[\s*BULLISH\s*\](.*?)\[\s*/\s*BULLISH\s*\]', text, re.DOTALL | re.IGNORECASE)
+        bearish_match = re.search(r'\[\s*BEARISH\s*\](.*?)\[\s*/\s*BEARISH\s*\]', text, re.DOTALL | re.IGNORECASE)
+        comment_match = re.search(r'\[\s*COMMENT\s*\](.*?)\[\s*/\s*COMMENT\s*\]', text, re.DOTALL | re.IGNORECASE)
+
         score = int(score_match.group(1)) if score_match else 50
-        bullish = bullish_match.group(1).strip() if bullish_match else "데이터 요약 실패"
-        bearish = bearish_match.group(1).strip() if bearish_match else "데이터 요약 실패"
-        return score, bullish, bearish
-    except Exception as e: return 50, "통신 지연", f"에러: {e}"
+        # 정규식이 그래도 실패하면 원인 파악이 되도록 원본 응답 일부를 노출
+        fallback = f"형식 파싱 실패 (원본 응답: {text[:150].strip()}...)" if text else "빈 응답 수신"
+        bullish = bullish_match.group(1).strip() if bullish_match else fallback
+        bearish = bearish_match.group(1).strip() if bearish_match else fallback
+        comment = comment_match.group(1).strip() if comment_match else "한줄평 생성 실패"
+        return score, bullish, bearish, comment
+    except Exception as e: return 50, "통신 지연", f"에러: {e}", "한줄평 생성 실패"
 
 def draw_professional_chart(df):
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.75, 0.25])
@@ -513,15 +534,16 @@ def main():
                     news = get_recent_news(leader_name.split(' ')[0], news_count)
                     
                     with tab1:
-                        score, bullish, bearish = generate_ai_report_parsed(leader_name.split(' ')[0], current_price, news)
+                        score, bullish, bearish, comment = generate_ai_report_parsed(leader_name.split(' ')[0], current_price, news)
                         
                         c1, c2 = st.columns([1.5, 5.5])
                         with c1: st.plotly_chart(draw_gauge(score), use_container_width=True)
                         with c2:
                             st.markdown(f"<div class='bullish-box'><strong>[ 긍정적 모멘텀 ]</strong><br>{bullish}</div>", unsafe_allow_html=True)
                             st.markdown(f"<div class='bearish-box'><strong>[ 부정적 리스크 ]</strong><br>{bearish}</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div class='comment-box'>💬 [ AI 한줄평 ] {comment}</div>", unsafe_allow_html=True)
                             
-                        report_text = f"분석 기업: {leader_name.split(' ')[0]}\n현재가: {current_price:,.0f}원\n투심 점수: {score}점\n\n[긍정적 팩트]\n{bullish}\n\n[부정적 팩트]\n{bearish}"
+                        report_text = f"분석 기업: {leader_name.split(' ')[0]}\n현재가: {current_price:,.0f}원\n투심 점수: {score}점\n\n[긍정적 팩트]\n{bullish}\n\n[부정적 팩트]\n{bearish}\n\n[AI 한줄평]\n{comment}"
                         st.download_button("[ 리포트 텍스트 다운로드 ]", data=report_text, file_name=f"{leader_name.split(' ')[0]}_AI_Report.txt", mime="text/plain")
                             
                     with tab2:
@@ -586,7 +608,7 @@ def main():
                     if st.session_state.get(su_ai_key, False):
                         with st.spinner("마켓 데이터 파싱 중..."):
                             su_news = get_recent_news(su['name'], news_count)
-                            score, bullish, bearish = generate_ai_report_parsed(su['name'], su_price, su_news)
+                            score, bullish, bearish, comment = generate_ai_report_parsed(su['name'], su_price, su_news)
                             
                             ac1, ac2 = st.columns([2, 5])
                             with ac1: st.plotly_chart(draw_gauge(score), use_container_width=True, key=f"gauge_{su['ticker']}")
@@ -594,6 +616,7 @@ def main():
                             with ac2:
                                 st.markdown(f"<div class='bullish-box'><strong>[ 긍정적 모멘텀 ]</strong><br>{bullish}</div>", unsafe_allow_html=True)
                                 st.markdown(f"<div class='bearish-box'><strong>[ 부정적 리스크 ]</strong><br>{bearish}</div>", unsafe_allow_html=True)
+                                st.markdown(f"<div class='comment-box'>💬 [ AI 한줄평 ] {comment}</div>", unsafe_allow_html=True)
             
             if idx < len(custom_suhyeju_list) - 1:
                 st.divider()
