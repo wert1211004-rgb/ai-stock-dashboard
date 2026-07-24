@@ -407,21 +407,24 @@ def get_recent_news(name, display_count=3):
 # AI 분석 전용: 표시용 뉴스와는 별개로, 신뢰도 높은 언론사(경제/통신사 위주) 기사를
 # 우선적으로 골라서 그 기사들만 근거로 AI가 분석하도록 함. 넉넉히 받아온 뒤
 # 도메인으로 필터링하고, 모자라면 나머지 기사로 채움.
-TRUSTED_NEWS_DOMAINS = [
-    "yna.co.kr",        # 연합뉴스
-    "yonhapnews.co.kr",
-    "hankyung.com",      # 한국경제
-    "mk.co.kr",          # 매일경제
-    "sedaily.com",       # 서울경제
-    "edaily.co.kr",      # 이데일리
-    "biz.chosun.com",    # 조선비즈
-    "fnnews.com",        # 파이낸셜뉴스
-    "mt.co.kr",          # 머니투데이
-    "news1.kr",          # 뉴스1
-    "einfomax.co.kr",    # 연합인포맥스
-    "newsis.com",        # 뉴시스
-    "ytn.co.kr",         # YTN
+# (도메인, 언론사명) 쌍으로 관리 — 사이드바 안내 문구에도 동일 목록을 재사용.
+TRUSTED_NEWS_SOURCES = [
+    ("yna.co.kr", "연합뉴스"),
+    ("yonhapnews.co.kr", "연합뉴스"),
+    ("hankyung.com", "한국경제"),
+    ("mk.co.kr", "매일경제"),
+    ("sedaily.com", "서울경제"),
+    ("edaily.co.kr", "이데일리"),
+    ("biz.chosun.com", "조선비즈"),
+    ("fnnews.com", "파이낸셜뉴스"),
+    ("mt.co.kr", "머니투데이"),
+    ("news1.kr", "뉴스1"),
+    ("einfomax.co.kr", "연합인포맥스"),
+    ("newsis.com", "뉴시스"),
+    ("ytn.co.kr", "YTN"),
 ]
+TRUSTED_NEWS_DOMAINS = [d for d, _ in TRUSTED_NEWS_SOURCES]
+TRUSTED_NEWS_NAMES = sorted(set(name for _, name in TRUSTED_NEWS_SOURCES))  # 사이드바 표시용 (중복 제거)
 
 def _is_trusted_source(url: str) -> bool:
     try:
@@ -553,10 +556,38 @@ def draw_gauge(score):
 # 4. 프론트엔드 UI 
 # ==========================================
 def main():
-    st.sidebar.markdown("### [ 시스템 설정 ]")
-    st.sidebar.caption("표시 뉴스: 5건 고정 (참고용) / AI 분석: 신뢰도 높은 언론사 기사 5건 별도 선별")
     news_count = 5
-    st.sidebar.markdown("---")
+
+    with st.sidebar:
+        st.markdown("### [ ABOUT THIS TERMINAL ]")
+        st.markdown(
+            "<div class='info-text' style='line-height:1.6;'>"
+            "이 터미널은 <b>실시간 시세(Yahoo Finance)</b>와 "
+            "<b>주요 경제 매체 뉴스</b>를 바탕으로, 국내 10개 섹터의 대장주·수혜주 흐름을 "
+            "한눈에 살펴볼 수 있도록 구성한 리서치 보조 도구입니다."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("---")
+
+        st.markdown("#### [ AI 분석에 사용되는 뉴스 ]")
+        st.markdown(
+            "<div class='info-text' style='line-height:1.6;'>"
+            "화면에 표시되는 뉴스는 참고용 5건이며, "
+            "<b>AI 투자심리 분석은 아래 언론사 기사 중 신뢰도가 검증된 기사 5건만</b> "
+            "별도로 선별해 근거로 사용합니다. 블로그, 커뮤니티, 광고성 게시물은 "
+            "분석 대상에서 제외됩니다."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "<div class='info-text' style='line-height:1.8; margin-top:8px;'>" +
+            " · ".join(TRUSTED_NEWS_NAMES) +
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("---")
+        st.caption("데이터 갱신 주기 — 뉴스/AI 분석: 15분 · 시세: 1분 · 컨센서스 목표가: 1시간")
 
     macro_data = get_macro_data()
     if macro_data:
