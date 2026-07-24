@@ -325,10 +325,39 @@ def get_finance_url(ticker: str) -> str:
         return f"https://finance.naver.com/item/main.naver?code={code}"
     return f"https://finance.yahoo.com/quote/{ticker}"
 
-@st.cache_data(ttl=1800)
+# 가격 조회는 캐시를 짧게(1분) 잡아서, 조회/토글 시점마다 사실상 실시간 가격이
+# 나오도록 함. (뉴스/AI분석은 API 호출 비용이 커서 15분 캐시 유지, 가격은
+# yfinance 단건 조회라 짧게 가져가도 부담이 적음)
+@st.cache_data(ttl=60)
 def get_quick_price(ticker):
     try: return yf.Ticker(ticker).history(period="1d")['Close'].iloc[-1]
     except: return 0
+
+def get_krx_tick_size(price: float) -> int:
+    """한국 증시(코스피/코스닥) 호가 단위. 가격대별로 상이."""
+    if price < 2000: return 1
+    elif price < 5000: return 5
+    elif price < 20000: return 10
+    elif price < 50000: return 50
+    elif price < 200000: return 100
+    elif price < 500000: return 500
+    else: return 1000
+
+def calc_entry_point(current_price: float, ticker: str, discount: float = 0.05):
+    """
+    정적으로 박제된 진입타점 대신, 조회 시점의 실시간가 기준으로
+    동적 산출. 해외종목은 호가단위 규칙이 달라 티커로 구분.
+    """
+    if not current_price or current_price <= 0:
+        return "가격 조회 실패"
+    is_krx = ".KS" in ticker or ".KQ" in ticker
+    target = current_price * (1 - discount)
+    if is_krx:
+        tick = get_krx_tick_size(target)
+        rounded = round(target / tick) * tick
+        return f"{rounded:,.0f}원 (현재가 대비 -{discount*100:.0f}%)"
+    else:
+        return f"${target:,.2f} (현재가 대비 -{discount*100:.0f}%)"
 
 @st.cache_data(ttl=1800)
 def get_stock_financials(ticker):
@@ -526,7 +555,11 @@ def main():
                 df = yf.Ticker(leader_ticker).history(period="6mo")
                 if not df.empty:
                     current_price = df['Close'].iloc[-1]
-                    st.metric("실시간 체결가", f"{current_price:,.0f} KRW")
+                    m1, m2 = st.columns([3, 1])
+                    with m1: st.metric("실시간 체결가", f"{current_price:,.0f} KRW")
+                    with m2:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        st.link_button("[ 매매 호가창 이동 ]", get_finance_url(leader_ticker), use_container_width=True)
                     
                     st.plotly_chart(draw_professional_chart(df), use_container_width=True)
                     
@@ -575,6 +608,7 @@ def main():
                     with sc1:
                         su_price = get_quick_price(su['ticker'])
                         real_target_price = get_real_target_price(su['ticker'])
+                        dynamic_entry = calc_entry_point(su_price, su['ticker'])
                         
                         st.markdown(f"""
                         <div class='trade-box'>
@@ -583,7 +617,7 @@ def main():
                             <hr style='margin: 10px 0;'>
                             <div class='info-text' style='line-height: 1.6;'>
                                 <b>[투자기간]</b> {su['horizon']}<br>
-                                <b>[진입타점]</b> {su['entry_price']}<br>
+                                <b>[진입타점(실시간가 기준 산출)]</b> {dynamic_entry}<br>
                                 <b>[목표가(컨센서스)]</b> <span style='color:#dc2626; font-weight:bold;'>{real_target_price}</span>
                             </div>
                         </div>
