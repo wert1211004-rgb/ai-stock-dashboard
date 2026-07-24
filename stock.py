@@ -14,110 +14,25 @@ import re
 # ==========================================
 # 1. 환경 설정 및 HTS 프로페셔널 테마 (CSS)
 # ==========================================
-st.set_page_config(page_title="Institutional Equity Research Terminal", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Institutional Equity Research Terminal", layout="wide")
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
-
-:root {
-    --bg-base: #0a0e14;
-    --bg-surface: #11161f;
-    --bg-elevated: #171d29;
-    --border-hairline: #242c3a;
-    --border-strong: #333c4d;
-    --text-primary: #eef1f6;
-    --text-secondary: #8993a4;
-    --text-tertiary: #5b6472;
-    --accent-gold: #c9a227;
-    --accent-gold-dim: rgba(201, 162, 39, 0.35);
-    --rise: #e5484d;
-    --fall: #4c8bf5;
-    --rise-bg: rgba(229, 72, 77, 0.08);
-    --fall-bg: rgba(76, 139, 245, 0.08);
-}
-
-html, body, .stApp { background-color: var(--bg-base) !important; }
-.stApp, .stApp p, .stApp span, .stApp label, .stMarkdown { font-family: 'Noto Sans KR', sans-serif; color: var(--text-primary); }
-[data-testid="stHeader"] { background-color: transparent; }
-.block-container { padding-top: 1.6rem; }
-
-h1, h2, h3, h4, h5 { color: var(--text-primary); font-family: 'Noto Sans KR', sans-serif; font-weight: 900; letter-spacing: -0.01em; }
-
-/* --- Sidebar --- */
-section[data-testid="stSidebar"] { background-color: var(--bg-surface); border-right: 1px solid var(--border-hairline); }
-section[data-testid="stSidebar"] * { color: var(--text-secondary); }
-section[data-testid="stSidebar"] h3 { color: var(--accent-gold); font-size: 0.78em; letter-spacing: 0.12em; font-weight: 700; }
-
-/* --- Hero --- */
-.hero-wrap { display: flex; align-items: center; gap: 14px; margin: 2px 0 4px 0; }
-.hero-live { display: inline-flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72em; letter-spacing: 0.14em; color: var(--rise); border: 1px solid rgba(229,72,77,0.35); padding: 4px 9px; border-radius: 2px; white-space: nowrap; }
-.hero-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--rise); animation: pulse 1.6s ease-in-out infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
-.hero-title { font-size: 2.05em; font-weight: 900; letter-spacing: -0.02em; margin: 0; }
-.hero-sub { color: var(--text-tertiary); font-family: 'IBM Plex Mono', monospace; font-size: 0.8em; letter-spacing: 0.03em; margin: 4px 0 0 0; }
-
-/* --- Ticker tape (signature element) --- */
-.ticker-tape-wrap { overflow: hidden; background: var(--bg-surface); border-top: 1px solid var(--border-hairline); border-bottom: 1px solid var(--border-hairline); padding: 11px 0; margin: 14px 0 26px 0; }
-.ticker-tape-track { display: flex; width: max-content; animation: ticker-scroll 30s linear infinite; }
-.ticker-tape-wrap:hover .ticker-tape-track { animation-play-state: paused; }
-@keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.ticker-item { display: flex; align-items: baseline; gap: 9px; font-family: 'IBM Plex Mono', monospace; padding: 0 30px; border-right: 1px solid var(--border-hairline); white-space: nowrap; }
-.ticker-name { color: var(--text-tertiary); font-size: 0.72em; letter-spacing: 0.08em; }
-.ticker-price { color: var(--text-primary); font-weight: 600; font-size: 0.94em; }
-.ticker-delta.up { color: var(--rise); }
-.ticker-delta.down { color: var(--fall); }
-
-/* --- Numbered section headers --- */
-.section-head { display: flex; align-items: baseline; gap: 12px; margin: 8px 0 16px 0; padding-bottom: 11px; border-bottom: 1px solid var(--border-hairline); }
-.section-num { font-family: 'IBM Plex Mono', monospace; color: var(--accent-gold); font-size: 0.85em; font-weight: 700; letter-spacing: 0.05em; }
-.section-title-en { font-family: 'IBM Plex Mono', monospace; color: var(--text-tertiary); font-size: 0.72em; letter-spacing: 0.14em; text-transform: uppercase; }
-.section-title-kr { font-size: 1.12em; font-weight: 700; color: var(--text-primary); }
-
-/* --- Cards & containers --- */
-.section-card, [data-testid="stVerticalBlockBorderWrapper"] { background-color: var(--bg-surface) !important; border: 1px solid var(--border-hairline) !important; border-radius: 3px !important; }
-.section-card { padding: 22px; margin-bottom: 22px; }
-
-.trade-box { background-color: var(--bg-elevated); border: 1px solid var(--border-hairline); border-left: 2px solid var(--accent-gold); padding: 16px; border-radius: 2px; margin-bottom: 10px; }
-.bullish-box { background-color: var(--rise-bg); border-left: 3px solid var(--rise); padding: 16px; border-radius: 2px; margin-bottom: 10px; }
-.bearish-box { background-color: var(--fall-bg); border-left: 3px solid var(--fall); padding: 16px; border-radius: 2px; margin-bottom: 10px; }
-.info-text { color: var(--text-secondary); font-size: 0.9em; }
-.positive-val { color: var(--rise); font-family: 'IBM Plex Mono', monospace; }
-.negative-val { color: var(--fall); font-family: 'IBM Plex Mono', monospace; }
-
-.news-item { padding: 10px 0; border-bottom: 1px dashed var(--border-hairline); }
-.news-item:last-child { border-bottom: none; }
-.news-item a { color: var(--text-primary) !important; text-decoration: none !important; }
-.news-item a:hover { color: var(--accent-gold) !important; }
-
-.disclaimer { font-size: 0.78em; color: var(--text-tertiary); text-align: center; border-top: 1px solid var(--border-hairline); padding-top: 20px; margin-top: 40px; line-height: 1.7; }
-
-/* --- Buttons --- */
-.stButton>button, .stDownloadButton>button, .stLinkButton>a {
-    background-color: transparent !important; color: var(--accent-gold) !important;
-    border: 1px solid var(--accent-gold-dim) !important; border-radius: 2px !important;
-    font-weight: 600 !important; font-family: 'IBM Plex Mono', monospace !important;
-    letter-spacing: 0.03em; transition: all 0.15s ease;
-}
-.stButton>button:hover, .stDownloadButton>button:hover, .stLinkButton>a:hover {
-    background-color: var(--accent-gold) !important; color: var(--bg-base) !important; border-color: var(--accent-gold) !important;
-}
-
-/* --- Inputs --- */
-.stTextInput input, .stSelectbox div[data-baseweb="select"] > div {
-    background-color: var(--bg-elevated) !important; border: 1px solid var(--border-hairline) !important; color: var(--text-primary) !important;
-}
-
-/* --- Metrics --- */
-div[data-testid="stMetric"] { background-color: var(--bg-elevated); border: 1px solid var(--border-hairline); border-radius: 3px; padding: 12px 16px; }
-div[data-testid="stMetricValue"] { font-family: 'IBM Plex Mono', monospace; color: var(--text-primary); }
-
-/* --- Tabs --- */
-.stTabs [data-baseweb="tab-list"] { gap: 4px; border-bottom: 1px solid var(--border-hairline); }
-.stTabs [data-baseweb="tab"] { color: var(--text-tertiary); font-family: 'IBM Plex Mono', monospace; font-size: 0.85em; }
-.stTabs [aria-selected="true"] { color: var(--accent-gold) !important; border-bottom-color: var(--accent-gold) !important; }
-
-hr { border-color: var(--border-hairline) !important; }
+    .stApp { background-color: #f1f5f9; }
+    h1, h2, h3, h4, h5 { color: #0f172a; font-family: 'Malgun Gothic', sans-serif; font-weight: 700; }
+    .section-card { background-color: #ffffff; padding: 24px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); margin-bottom: 24px; }
+    .stButton>button { background-color: #1e293b; color: white; border-radius: 2px; border: none; font-weight: bold; border: 1px solid #334155; }
+    .stButton>button:hover { background-color: #334155; color: white; }
+    .trade-box { background-color: #f8fafc; padding: 15px; border: 1px solid #cbd5e1; margin-bottom: 10px; border-radius: 4px; }
+    .bullish-box { background-color: #f0f7ff; border-left: 4px solid #2563eb; padding: 15px; margin-bottom: 10px; border-radius: 4px; }
+    .bearish-box { background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 10px; border-radius: 4px; }
+    .info-text { color: #475569; font-size: 0.9em; }
+    .macro-ticker { background-color: #0f172a; color: #f8fafc; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; font-family: 'Courier New', Courier, monospace;}
+    .positive-val { color: #ef4444; }
+    .negative-val { color: #3b82f6; }
+    .disclaimer { font-size: 0.8em; color: #6b7280; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 40px; }
+    .news-item { padding: 8px 0; border-bottom: 1px dashed #cbd5e1; }
+    .news-item:last-child { border-bottom: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -146,6 +61,13 @@ MARKET_THEMES = {
                     {"name": "한미반도체", "ticker": "042700.KS", "relation": "HBM TC본더 독점", "action": "실적 고성장", "horizon": "중기", "entry_price": "130,000원", "price_merit": "독점 프리미엄", "growth_point": "HBM 단가 상승", "risk_factor": "경쟁사 퀄 테스트"},
                     {"name": "테크윙", "ticker": "089030.KQ", "relation": "HBM 테스트 핸들러", "action": "수주 모멘텀", "horizon": "중기", "entry_price": "38,000원", "price_merit": "수율 향상 필수 장비", "growth_point": "독점 장비 가시화", "risk_factor": "검수 지연"}
                 ]
+            },
+            "DB하이텍 (3위)": {
+                "ticker": "000990.KS",
+                "수혜주": [
+                    {"name": "테스나", "ticker": "131970.KQ", "relation": "비메모리 파운드리 위탁 테스트", "action": "실적 성장", "horizon": "중기", "entry_price": "18,000원", "price_merit": "파운드리 가동률 연동 실적", "growth_point": "8인치 파운드리 수요 회복", "risk_factor": "레거시 공정 경쟁 심화"},
+                    {"name": "하나마이크론", "ticker": "067310.KQ", "relation": "반도체 패키징/테스트 전문", "action": "사업 다각화", "horizon": "중장기", "entry_price": "15,000원", "price_merit": "고부가 패키징 전환", "growth_point": "AI 반도체 패키징 수요", "risk_factor": "고객사 편중 리스크"}
+                ]
             }
         }
     },
@@ -155,13 +77,21 @@ MARKET_THEMES = {
             "두산로보틱스 (1위)": {
                 "ticker": "454910.KS",
                 "수혜주": [
-                    {"name": "SPG", "ticker": "058610.KQ", "relation": "정밀 감속기 파트너", "action": "턴어라운드", "horizon": "중장기", "entry_price": "25,000원", "price_merit": "국산화 1위 프리미엄", "growth_point": "산업용 로봇 수요 개화", "risk_factor": "중국산 저가 공세"}
+                    {"name": "SPG", "ticker": "058610.KQ", "relation": "정밀 감속기 파트너", "action": "턴어라운드", "horizon": "중장기", "entry_price": "25,000원", "price_merit": "국산화 1위 프리미엄", "growth_point": "산업용 로봇 수요 개화", "risk_factor": "중국산 저가 공세"},
+                    {"name": "티로보틱스", "ticker": "117730.KQ", "relation": "협동로봇용 반송/부품 공급", "action": "수주 확대", "horizon": "중기", "entry_price": "8,000원", "price_merit": "이차전지 장비 로봇 수요", "growth_point": "반도체·디스플레이 반송로봇 확대", "risk_factor": "전방산업 설비투자 둔화"}
                 ]
             },
             "레인보우로보틱스 (2위)": {
                 "ticker": "277810.KQ",
                 "수혜주": [
-                    {"name": "엠로", "ticker": "058970.KQ", "relation": "삼성 밸류체인 연관 SCM 소프트웨어", "action": "안정적 우상향", "horizon": "장기", "entry_price": "60,000원", "price_merit": "AI 기반 공급망 관리 독점", "growth_point": "글로벌 SaaS 진출", "risk_factor": "초기 해외 마케팅 비용"}
+                    {"name": "엠로", "ticker": "058970.KQ", "relation": "삼성 밸류체인 연관 SCM 소프트웨어", "action": "안정적 우상향", "horizon": "장기", "entry_price": "60,000원", "price_merit": "AI 기반 공급망 관리 독점", "growth_point": "글로벌 SaaS 진출", "risk_factor": "초기 해외 마케팅 비용"},
+                    {"name": "삼익THK", "ticker": "004380.KS", "relation": "로봇 구동부 정밀부품(LM가이드) 공급", "action": "실적 개선", "horizon": "장기", "entry_price": "9,000원", "price_merit": "휴머노이드向 부품 수요", "growth_point": "산업용 로봇 시장 확대", "risk_factor": "환율 변동성"}
+                ]
+            },
+            "유일로보틱스 (3위)": {
+                "ticker": "388720.KQ",
+                "수혜주": [
+                    {"name": "로보티즈", "ticker": "108490.KQ", "relation": "로봇 구동모듈/서보모터 전문", "action": "매출 성장", "horizon": "중기", "entry_price": "10,000원", "price_merit": "협동로봇 서보모터 국산화", "growth_point": "라스트마일 배송로봇 확산", "risk_factor": "중소형주 변동성"}
                 ]
             }
         }
@@ -172,19 +102,22 @@ MARKET_THEMES = {
             "LG에너지솔루션 (1위)": {
                 "ticker": "373220.KS",
                 "수혜주": [
-                    {"name": "엔켐", "ticker": "348370.KQ", "relation": "북미 공장 핵심 전해액", "action": "모멘텀 보유", "horizon": "중기", "entry_price": "220,000원", "price_merit": "IRA 규제 수혜", "growth_point": "북미 캡티브 물량 확대", "risk_factor": "고객사 공급망 다변화"}
+                    {"name": "엔켐", "ticker": "348370.KQ", "relation": "북미 공장 핵심 전해액", "action": "모멘텀 보유", "horizon": "중기", "entry_price": "220,000원", "price_merit": "IRA 규제 수혜", "growth_point": "북미 캡티브 물량 확대", "risk_factor": "고객사 공급망 다변화"},
+                    {"name": "엘앤에프", "ticker": "066970.KQ", "relation": "하이니켈 양극재 공급사", "action": "실적 부진 탈출 기대", "horizon": "중장기", "entry_price": "80,000원", "price_merit": "밸류 저점 구간", "growth_point": "차세대 양극재 개발", "risk_factor": "메탈 가격 하락"}
                 ]
             },
             "삼성SDI (2위)": {
                 "ticker": "006400.KS",
                 "수혜주": [
-                    {"name": "상신EDP", "ticker": "091580.KQ", "relation": "원통형 캔 부품 독점", "action": "안정적 성장", "horizon": "장기", "entry_price": "14,000원", "price_merit": "독점 구조 프리미엄", "growth_point": "4680 캔 양산", "risk_factor": "전동공구 수요 부진"}
+                    {"name": "상신EDP", "ticker": "091580.KQ", "relation": "원통형 캔 부품 독점", "action": "안정적 성장", "horizon": "장기", "entry_price": "14,000원", "price_merit": "독점 구조 프리미엄", "growth_point": "4680 캔 양산", "risk_factor": "전동공구 수요 부진"},
+                    {"name": "에코프로비엠", "ticker": "247540.KQ", "relation": "삼성SDI 주요 양극재 협력사", "action": "수주 모멘텀", "horizon": "중기", "entry_price": "150,000원", "price_merit": "고객 다변화 진행", "growth_point": "북미 합작공장 가동", "risk_factor": "전방 수요 캐즘"}
                 ]
             },
             "포스코홀딩스 (3위)": {
                 "ticker": "005490.KS",
                 "수혜주": [
-                    {"name": "포스코퓨처엠", "ticker": "003670.KS", "relation": "그룹 양/음극재 핵심", "action": "모멘텀 보유", "horizon": "중장기", "entry_price": "250,000원", "price_merit": "원가 경쟁력", "growth_point": "글로벌 OEM 수주", "risk_factor": "캐즘 장기화"}
+                    {"name": "포스코퓨처엠", "ticker": "003670.KS", "relation": "그룹 양/음극재 핵심", "action": "모멘텀 보유", "horizon": "중장기", "entry_price": "250,000원", "price_merit": "원가 경쟁력", "growth_point": "글로벌 OEM 수주", "risk_factor": "캐즘 장기화"},
+                    {"name": "포스코엠텍", "ticker": "009520.KQ", "relation": "그룹 리튬·소재 사업 연계", "action": "모멘텀 보유", "horizon": "중기", "entry_price": "9,000원", "price_merit": "그룹 리튬사업 연계", "growth_point": "리튬 생산 확대 수혜", "risk_factor": "리튬가 변동성"}
                 ]
             }
         }
@@ -202,7 +135,14 @@ MARKET_THEMES = {
             "기아 (2위)": {
                 "ticker": "000270.KS",
                 "수혜주": [
-                    {"name": "HL만도", "ticker": "204320.KS", "relation": "주요 차종 섀시/제동", "action": "모멘텀 회복", "horizon": "중기", "entry_price": "38,000원", "price_merit": "체질 개선 완료", "growth_point": "인도 로컬 공장 수주", "risk_factor": "원자재 전가 지연"}
+                    {"name": "HL만도", "ticker": "204320.KS", "relation": "주요 차종 섀시/제동", "action": "모멘텀 회복", "horizon": "중기", "entry_price": "38,000원", "price_merit": "체질 개선 완료", "growth_point": "인도 로컬 공장 수주", "risk_factor": "원자재 전가 지연"},
+                    {"name": "명신산업", "ticker": "009900.KS", "relation": "기아 EV 플랫폼 차체/프레임 공급", "action": "수주 확대", "horizon": "중기", "entry_price": "12,000원", "price_merit": "EV 전용 부품 밸류체인", "growth_point": "PBV 신사업 확대", "risk_factor": "EV 수요 둔화"}
+                ]
+            },
+            "KG모빌리티 (3위)": {
+                "ticker": "003620.KS",
+                "수혜주": [
+                    {"name": "대유에이텍", "ticker": "002880.KS", "relation": "KG모빌리티 시트/부품 공급", "action": "실적 개선", "horizon": "중기", "entry_price": "3,500원", "price_merit": "저평가 부품주", "growth_point": "신차 판매 회복", "risk_factor": "완성차 판매 부진"}
                 ]
             }
         }
@@ -213,19 +153,22 @@ MARKET_THEMES = {
             "삼성바이오로직스 (1위)": {
                 "ticker": "207940.KS",
                 "수혜주": [
-                    {"name": "바이넥스", "ticker": "053030.KQ", "relation": "중소형 위탁생산(CDMO) 대안", "action": "실적 개선", "horizon": "중기", "entry_price": "11,000원", "price_merit": "생물보안법 반사이익", "growth_point": "미국/유럽 고객사 다변화", "risk_factor": "바이오 벤처 펀딩 위축"}
+                    {"name": "바이넥스", "ticker": "053030.KQ", "relation": "중소형 위탁생산(CDMO) 대안", "action": "실적 개선", "horizon": "중기", "entry_price": "11,000원", "price_merit": "생물보안법 반사이익", "growth_point": "미국/유럽 고객사 다변화", "risk_factor": "바이오 벤처 펀딩 위축"},
+                    {"name": "에스티팜", "ticker": "237690.KQ", "relation": "올리고뉴클레오티드 원료 CDMO", "action": "실적 성장", "horizon": "중기", "entry_price": "70,000원", "price_merit": "올리고 CDMO 고성장", "growth_point": "비만치료제 원료 수주", "risk_factor": "고객사 임상 실패 리스크"}
                 ]
             },
             "유한양행 (2위)": {
                 "ticker": "000100.KS",
                 "수혜주": [
-                    {"name": "오스코텍", "ticker": "039200.KQ", "relation": "렉라자 원개발사", "action": "모멘텀 가시화", "horizon": "장기", "entry_price": "30,000원", "price_merit": "로열티 유입 가치", "growth_point": "글로벌 마일스톤 반영", "risk_factor": "후속 파이프라인 부재"}
+                    {"name": "오스코텍", "ticker": "039200.KQ", "relation": "렉라자 원개발사", "action": "모멘텀 가시화", "horizon": "장기", "entry_price": "30,000원", "price_merit": "로열티 유입 가치", "growth_point": "글로벌 마일스톤 반영", "risk_factor": "후속 파이프라인 부재"},
+                    {"name": "에이비엘바이오", "ticker": "298380.KQ", "relation": "면역항암 이중항체 기술 협력", "action": "모멘텀 가시화", "horizon": "장기", "entry_price": "25,000원", "price_merit": "빅파마 기술수출 기대", "growth_point": "글로벌 임상 진행", "risk_factor": "임상 결과 불확실성"}
                 ]
             },
             "알테오젠 (3위)": {
                 "ticker": "196170.KQ",
                 "수혜주": [
-                    {"name": "리가켐바이오", "ticker": "141080.KQ", "relation": "ADC 기술수출 파트너격", "action": "성장 기대", "horizon": "중장기", "entry_price": "90,000원", "price_merit": "밸류 하단 지지", "growth_point": "ADC 트렌드 선도", "risk_factor": "임상 초기 독성 이슈"}
+                    {"name": "리가켐바이오", "ticker": "141080.KQ", "relation": "ADC 기술수출 파트너격", "action": "성장 기대", "horizon": "중장기", "entry_price": "90,000원", "price_merit": "밸류 하단 지지", "growth_point": "ADC 트렌드 선도", "risk_factor": "임상 초기 독성 이슈"},
+                    {"name": "삼천당제약", "ticker": "000250.KS", "relation": "동일 바이오시밀러 트렌드 대장주", "action": "성장 기대", "horizon": "중기", "entry_price": "120,000원", "price_merit": "아일리아 시밀러 모멘텀", "growth_point": "유럽 허가 확대", "risk_factor": "경쟁 심화"}
                 ]
             }
         }
@@ -236,19 +179,22 @@ MARKET_THEMES = {
             "한화에어로스페이스 (1위)": {
                 "ticker": "012450.KS",
                 "수혜주": [
-                    {"name": "한화시스템", "ticker": "272210.KS", "relation": "방산 전자/위성 계열사", "action": "모멘텀 보유", "horizon": "중장기", "entry_price": "18,000원", "price_merit": "체계 업체 대비 주가 탄력성", "growth_point": "무기 전장화 수혜", "risk_factor": "우주 신사업 R&D 비용"}
+                    {"name": "한화시스템", "ticker": "272210.KS", "relation": "방산 전자/위성 계열사", "action": "모멘텀 보유", "horizon": "중장기", "entry_price": "18,000원", "price_merit": "체계 업체 대비 주가 탄력성", "growth_point": "무기 전장화 수혜", "risk_factor": "우주 신사업 R&D 비용"},
+                    {"name": "빅텍", "ticker": "065450.KQ", "relation": "전자전 장비 공급사", "action": "수주 모멘텀", "horizon": "중기", "entry_price": "6,000원", "price_merit": "저평가 방산 소형주", "growth_point": "전자전 수요 증가", "risk_factor": "정부 예산 편성 지연"}
                 ]
             },
             "LIG넥스원 (2위)": {
                 "ticker": "079550.KS",
                 "수혜주": [
-                    {"name": "아이쓰리시스템", "ticker": "214430.KQ", "relation": "유도무기 적외선 영상센서 독점", "action": "가치주 성격", "horizon": "장기", "entry_price": "35,000원", "price_merit": "군수용 센서 독점 체제", "growth_point": "천궁 수출 물량 탑재", "risk_factor": "내수 방산 예산 감축"}
+                    {"name": "아이쓰리시스템", "ticker": "214430.KQ", "relation": "유도무기 적외선 영상센서 독점", "action": "가치주 성격", "horizon": "장기", "entry_price": "35,000원", "price_merit": "군수용 센서 독점 체제", "growth_point": "천궁 수출 물량 탑재", "risk_factor": "내수 방산 예산 감축"},
+                    {"name": "휴니드테크놀러지스", "ticker": "005870.KS", "relation": "군용 통신체계 협력사", "action": "실적 안정", "horizon": "장기", "entry_price": "9,000원", "price_merit": "통신체계 독점적 지위", "growth_point": "차기 전술정보통신체계 수주", "risk_factor": "수주 지연 리스크"}
                 ]
             },
             "현대로템 (3위)": {
                 "ticker": "064350.KS",
                 "수혜주": [
-                    {"name": "SNT다이내믹스", "ticker": "003570.KS", "relation": "K2 전차 변속기 국산화", "action": "실적 턴어라운드", "horizon": "중기", "entry_price": "16,000원", "price_merit": "국산 변속기 채택 마진 개선", "growth_point": "폴란드/튀르키예 추가 수출", "risk_factor": "수출 계약 지연"}
+                    {"name": "SNT다이내믹스", "ticker": "003570.KS", "relation": "K2 전차 변속기 국산화", "action": "실적 턴어라운드", "horizon": "중기", "entry_price": "16,000원", "price_merit": "국산 변속기 채택 마진 개선", "growth_point": "폴란드/튀르키예 추가 수출", "risk_factor": "수출 계약 지연"},
+                    {"name": "현대위아", "ticker": "011210.KS", "relation": "K9 자주포 등 방산 부품 공급", "action": "실적 개선", "horizon": "중기", "entry_price": "100,000원", "price_merit": "방산+공작기계 밸류업", "growth_point": "해외 자주포 수출 확대", "risk_factor": "공작기계 부문 부진"}
                 ]
             }
         }
@@ -259,13 +205,15 @@ MARKET_THEMES = {
             "HD현대일렉트릭 (1위)": {
                 "ticker": "267260.KS",
                 "수혜주": [
-                    {"name": "일진전기", "ticker": "103590.KS", "relation": "초고압 변압기/전선 턴키 경쟁력", "action": "성장 가속", "horizon": "중장기", "entry_price": "22,000원", "price_merit": "수주 잔고 대비 저평가", "growth_point": "미국 초고압망 교체 수주", "risk_factor": "유상증자 등 희석 우려"}
+                    {"name": "일진전기", "ticker": "103590.KS", "relation": "초고압 변압기/전선 턴키 경쟁력", "action": "성장 가속", "horizon": "중장기", "entry_price": "22,000원", "price_merit": "수주 잔고 대비 저평가", "growth_point": "미국 초고압망 교체 수주", "risk_factor": "유상증자 등 희석 우려"},
+                    {"name": "효성중공업", "ticker": "298040.KS", "relation": "초고압 변압기 밸류체인 동반사", "action": "수주 급증", "horizon": "중장기", "entry_price": "500,000원", "price_merit": "미국 전력망 슈퍼사이클", "growth_point": "북미 수주잔고 확대", "risk_factor": "높은 밸류에이션"}
                 ]
             },
             "LS일렉트릭 (2위)": {
                 "ticker": "010120.KS",
                 "수혜주": [
-                    {"name": "제룡전기", "ticker": "033100.KQ", "relation": "주상/소형 변압기 수출 대장", "action": "수익성 극대화", "horizon": "중기", "entry_price": "65,000원", "price_merit": "이익률 30% 이상 유지", "growth_point": "미국 배전망 교체 폭증", "risk_factor": "미국 현지 관세 부과"}
+                    {"name": "제룡전기", "ticker": "033100.KQ", "relation": "주상/소형 변압기 수출 대장", "action": "수익성 극대화", "horizon": "중기", "entry_price": "65,000원", "price_merit": "이익률 30% 이상 유지", "growth_point": "미국 배전망 교체 폭증", "risk_factor": "미국 현지 관세 부과"},
+                    {"name": "LS전선아시아", "ticker": "121890.KQ", "relation": "LS그룹 전선 밸류체인", "action": "성장세", "horizon": "중기", "entry_price": "15,000원", "price_merit": "동남아 전력 인프라 수혜", "growth_point": "해저케이블 수요 확대", "risk_factor": "원자재 가격 변동"}
                 ]
             }
         }
@@ -276,19 +224,22 @@ MARKET_THEMES = {
             "HD한국조선해양 (1위)": {
                 "ticker": "009540.KS",
                 "수혜주": [
-                    {"name": "HD현대미포", "ticker": "010620.KS", "relation": "중형 PC선 핵심 계열사", "action": "턴어라운드", "horizon": "중기", "entry_price": "85,000원", "price_merit": "적자 탈출 기대감", "growth_point": "친환경 선박 발주 사이클", "risk_factor": "인력난 지속"}
+                    {"name": "HD현대미포", "ticker": "010620.KS", "relation": "중형 PC선 핵심 계열사", "action": "턴어라운드", "horizon": "중기", "entry_price": "85,000원", "price_merit": "적자 탈출 기대감", "growth_point": "친환경 선박 발주 사이클", "risk_factor": "인력난 지속"},
+                    {"name": "세진중공업", "ticker": "075580.KS", "relation": "조선 기자재 블록 전문 협력사", "action": "수주 확대", "horizon": "중기", "entry_price": "20,000원", "price_merit": "조선 호황 수혜 소형주", "growth_point": "블록 물량 증가", "risk_factor": "인건비 상승"}
                 ]
             },
             "한화오션 (2위)": {
                 "ticker": "042660.KS",
                 "수혜주": [
-                    {"name": "한화엔진", "ticker": "082740.KS", "relation": "대형 선박 엔진 수직계열화", "action": "이익률 개선", "horizon": "중장기", "entry_price": "11,000원", "price_merit": "시너지 편입 가치", "growth_point": "이중연료 엔진 채택 확대", "risk_factor": "타사 물량 이탈"}
+                    {"name": "한화엔진", "ticker": "082740.KS", "relation": "대형 선박 엔진 수직계열화", "action": "이익률 개선", "horizon": "중장기", "entry_price": "11,000원", "price_merit": "시너지 편입 가치", "growth_point": "이중연료 엔진 채택 확대", "risk_factor": "타사 물량 이탈"},
+                    {"name": "동성화인텍", "ticker": "033500.KQ", "relation": "LNG선 보냉재 공급사", "action": "실적 성장", "horizon": "중기", "entry_price": "25,000원", "price_merit": "LNG선 발주 수혜 독점적 지위", "growth_point": "LNG선 발주 지속", "risk_factor": "원자재 가격 변동"}
                 ]
             },
             "삼성중공업 (3위)": {
                 "ticker": "010140.KS",
                 "수혜주": [
-                    {"name": "성광벤드", "ticker": "014620.KQ", "relation": "해양플랜트/LNG 피팅 부품", "action": "가치주", "horizon": "중기", "entry_price": "13,000원", "price_merit": "무차입 현금 경영", "growth_point": "LNG 인프라 투자 지속", "risk_factor": "유가 급락 시 발주 취소"}
+                    {"name": "성광벤드", "ticker": "014620.KQ", "relation": "해양플랜트/LNG 피팅 부품", "action": "가치주", "horizon": "중기", "entry_price": "13,000원", "price_merit": "무차입 현금 경영", "growth_point": "LNG 인프라 투자 지속", "risk_factor": "유가 급락 시 발주 취소"},
+                    {"name": "삼강엠앤티", "ticker": "100090.KQ", "relation": "해양플랜트 핵심 구조물 공급", "action": "턴어라운드", "horizon": "중기", "entry_price": "30,000원", "price_merit": "해상풍력 기자재 병행", "growth_point": "해양플랜트 발주 재개", "risk_factor": "저가 수주 후유증"}
                 ]
             }
         }
@@ -299,19 +250,22 @@ MARKET_THEMES = {
             "NAVER (1위)": {
                 "ticker": "035420.KS",
                 "수혜주": [
-                    {"name": "플레이디", "ticker": "237820.KQ", "relation": "네이버 검색광고 대행 파트너", "action": "실적 방어", "horizon": "단기", "entry_price": "6,000원", "price_merit": "현금 창출 대비 저평가", "growth_point": "디지털 마케팅 단가 인상", "risk_factor": "광고 경기 침체"}
+                    {"name": "플레이디", "ticker": "237820.KQ", "relation": "네이버 검색광고 대행 파트너", "action": "실적 방어", "horizon": "단기", "entry_price": "6,000원", "price_merit": "현금 창출 대비 저평가", "growth_point": "디지털 마케팅 단가 인상", "risk_factor": "광고 경기 침체"},
+                    {"name": "다우기술", "ticker": "023590.KS", "relation": "네이버 클라우드/IT 인프라 협력", "action": "가치주", "horizon": "장기", "entry_price": "60,000원", "price_merit": "키움증권 지분가치+IT", "growth_point": "클라우드 사업 확대", "risk_factor": "지주사 할인"}
                 ]
             },
             "카카오 (2위)": {
                 "ticker": "035720.KS",
                 "수혜주": [
-                    {"name": "디어유", "ticker": "376300.KQ", "relation": "카카오/SM 엔터 밸류체인 소통 플랫폼", "action": "저평가", "horizon": "중기", "entry_price": "28,000원", "price_merit": "구독 레버리지 효과", "growth_point": "일본/중국 아티스트 입점", "risk_factor": "팬덤 이탈 우려"}
+                    {"name": "디어유", "ticker": "376300.KQ", "relation": "카카오/SM 엔터 밸류체인 소통 플랫폼", "action": "저평가", "horizon": "중기", "entry_price": "28,000원", "price_merit": "구독 레버리지 효과", "growth_point": "일본/중국 아티스트 입점", "risk_factor": "팬덤 이탈 우려"},
+                    {"name": "카카오게임즈", "ticker": "293490.KQ", "relation": "카카오 게임 자회사", "action": "실적 회복 기대", "horizon": "중기", "entry_price": "20,000원", "price_merit": "신작 모멘텀", "growth_point": "글로벌 게임 출시", "risk_factor": "게임 흥행 불확실성"}
                 ]
             },
             "삼성SDS (3위)": {
                 "ticker": "018260.KS",
                 "수혜주": [
-                    {"name": "엠로", "ticker": "058970.KQ", "relation": "자회사격 SCM 소프트웨어 파트너", "action": "성장 가시화", "horizon": "장기", "entry_price": "60,000원", "price_merit": "B2B SaaS 락인 효과", "growth_point": "SDS 연계 글로벌 진출", "risk_factor": "밸류에이션 부담"}
+                    {"name": "엠로", "ticker": "058970.KQ", "relation": "자회사격 SCM 소프트웨어 파트너", "action": "성장 가시화", "horizon": "장기", "entry_price": "60,000원", "price_merit": "B2B SaaS 락인 효과", "growth_point": "SDS 연계 글로벌 진출", "risk_factor": "밸류에이션 부담"},
+                    {"name": "이크레더블", "ticker": "950130.KQ", "relation": "삼성SDS 클라우드 밸류체인", "action": "안정적 배당", "horizon": "장기", "entry_price": "20,000원", "price_merit": "고배당 캐시카우", "growth_point": "전자문서 시장 성장", "risk_factor": "성장성 둔화"}
                 ]
             }
         }
@@ -322,19 +276,22 @@ MARKET_THEMES = {
             "KB금융 (1위)": {
                 "ticker": "055560.KS",
                 "수혜주": [
-                    {"name": "JB금융지주", "ticker": "175330.KS", "relation": "고수익성 지방은행 가치주 대안", "action": "초고배당", "horizon": "장기", "entry_price": "12,000원", "price_merit": "가장 높은 ROE 보유", "growth_point": "자사주 매입 및 소각 확대", "risk_factor": "PF 대손충당금 반영"}
+                    {"name": "JB금융지주", "ticker": "175330.KS", "relation": "고수익성 지방은행 가치주 대안", "action": "초고배당", "horizon": "장기", "entry_price": "12,000원", "price_merit": "가장 높은 ROE 보유", "growth_point": "자사주 매입 및 소각 확대", "risk_factor": "PF 대손충당금 반영"},
+                    {"name": "카카오뱅크", "ticker": "323410.KS", "relation": "디지털 금융 밸류업 관련주", "action": "성장주", "horizon": "중기", "entry_price": "25,000원", "price_merit": "플랫폼 금융 프리미엄", "growth_point": "여신 포트폴리오 확대", "risk_factor": "규제 리스크"}
                 ]
             },
             "메리츠금융지주 (2위)": {
                 "ticker": "138040.KS",
                 "수혜주": [
-                    {"name": "키움증권", "ticker": "039490.KS", "relation": "밸류업 브로커리지 대안 증권사", "action": "실적 성장", "horizon": "중기", "entry_price": "120,000원", "price_merit": "지주사 대비 상대적 저평가", "growth_point": "적극적 주주환원 정책", "risk_factor": "거래대금 감소"}
+                    {"name": "키움증권", "ticker": "039490.KS", "relation": "밸류업 브로커리지 대안 증권사", "action": "실적 성장", "horizon": "중기", "entry_price": "120,000원", "price_merit": "지주사 대비 상대적 저평가", "growth_point": "적극적 주주환원 정책", "risk_factor": "거래대금 감소"},
+                    {"name": "미래에셋증권", "ticker": "006800.KS", "relation": "밸류업 증권업종 대표주", "action": "주주환원 확대", "horizon": "중기", "entry_price": "10,000원", "price_merit": "자사주 소각 정책", "growth_point": "해외법인 실적 개선", "risk_factor": "시장 변동성"}
                 ]
             },
             "신한지주 (3위)": {
                 "ticker": "055550.KS",
                 "수혜주": [
-                    {"name": "우리금융지주", "ticker": "316140.KS", "relation": "전통 시중은행 고배당 대안", "action": "배당 매력", "horizon": "장기", "entry_price": "14,000원", "price_merit": "7% 이상 배당률", "growth_point": "증권사 인수를 통한 다변화", "risk_factor": "자본비율 열위"}
+                    {"name": "우리금융지주", "ticker": "316140.KS", "relation": "전통 시중은행 고배당 대안", "action": "배당 매력", "horizon": "장기", "entry_price": "14,000원", "price_merit": "7% 이상 배당률", "growth_point": "증권사 인수를 통한 다변화", "risk_factor": "자본비율 열위"},
+                    {"name": "하나금융지주", "ticker": "086790.KS", "relation": "4대 금융지주 밸류업 동반주", "action": "고배당", "horizon": "장기", "entry_price": "60,000원", "price_merit": "밸류업 프로그램 선도", "growth_point": "자사주 매입소각", "risk_factor": "PF 부실 우려"}
                 ]
             }
         }
@@ -447,7 +404,6 @@ def generate_ai_report_parsed(ticker_name, price, news_list):
     except Exception as e: return 50, "통신 지연", f"에러: {e}"
 
 def draw_professional_chart(df):
-    df = df.copy()
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.75, 0.25])
     
     fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], 
@@ -455,46 +411,33 @@ def draw_professional_chart(df):
     
     df['MA20'] = df['Close'].rolling(window=20).mean()
     df['MA60'] = df['Close'].rolling(window=60).mean()
-    fig.add_trace(go.Scatter(x=df.index, y=df['MA20'], line=dict(color='#c9a227', width=1.5), name='20 MA'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df.index, y=df['MA60'], line=dict(color='#8993a4', width=1.5), name='60 MA'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df.index, y=df['MA20'], line=dict(color='#f59e0b', width=1.5), name='20 MA'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df.index, y=df['MA60'], line=dict(color='#10b981', width=1.5), name='60 MA'), row=1, col=1)
     
-    colors = ['#e5484d' if row['Close'] >= row['Open'] else '#4c8bf5' for _, row in df.iterrows()]
+    colors = ['#ef4444' if row['Close'] >= row['Open'] else '#3b82f6' for _, row in df.iterrows()]
     fig.add_trace(go.Bar(x=df.index, y=df['Volume'], marker_color=colors, name='Volume'), row=2, col=1)
     
-    fig.update_layout(xaxis_rangeslider_visible=False, margin=dict(l=10, r=10, t=10, b=10), height=550, showlegend=False,
-                       plot_bgcolor='#11161f', paper_bgcolor='#11161f', font=dict(color='#8993a4', family='IBM Plex Mono'))
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#242c3a', zeroline=False)
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#242c3a', zeroline=False)
+    fig.update_layout(xaxis_rangeslider_visible=False, margin=dict(l=10, r=10, t=10, b=10), height=550, showlegend=False, plot_bgcolor='#ffffff', paper_bgcolor='#ffffff')
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#f1f5f9')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#f1f5f9')
     return fig
-
-def render_section_header(num, title_en, title_kr):
-    st.markdown(f"""
-    <div class='section-head'>
-        <span class='section-num'>{num}</span>
-        <span class='section-title-en'>{title_en}</span>
-        <span class='section-title-kr'>{title_kr}</span>
-    </div>
-    """, unsafe_allow_html=True)
 
 def draw_gauge(score):
     fig = go.Figure(go.Indicator(
         mode = "gauge+number",
         value = score,
         domain = {'x': [0, 1], 'y': [0, 1]},
-        title = {'text': "AI SCORE", 'font': {'size': 13, 'color': '#8993a4', 'family': 'IBM Plex Mono'}},
-        number = {'font': {'color': '#eef1f6', 'family': 'IBM Plex Mono'}},
+        title = {'text': "AI Score", 'font': {'size': 14, 'color': '#334155'}},
         gauge = {
-            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#5b6472", 'tickfont': {'color': '#5b6472'}},
-            'bar': {'color': "#c9a227"},
-            'bgcolor': "#171d29",
-            'bordercolor': "#242c3a",
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#cbd5e1"},
+            'bar': {'color': "#1e293b"},
             'steps' : [
-                {'range': [0, 40], 'color': "rgba(76,139,245,0.15)"},
-                {'range': [40, 60], 'color': "#171d29"},
-                {'range': [60, 100], 'color': "rgba(229,72,77,0.15)"}],
+                {'range': [0, 40], 'color': "#fee2e2"},
+                {'range': [40, 60], 'color': "#f1f5f9"},
+                {'range': [60, 100], 'color': "#dbeafe"}],
         }
     ))
-    fig.update_layout(height=220, margin=dict(l=20, r=20, t=30, b=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_layout(height=220, margin=dict(l=20, r=20, t=30, b=10))
     return fig
 
 # ==========================================
@@ -505,32 +448,18 @@ def main():
     news_count = st.sidebar.slider("[ 표시할 뉴스 개수 ]", min_value=3, max_value=10, value=3, step=1)
     st.sidebar.markdown("---")
 
-    st.markdown("""
-    <div class='hero-wrap'>
-        <span class='hero-title'>Institutional Equity Research Terminal</span>
-        <span class='hero-live'><span class='hero-live-dot'></span>LIVE</span>
-    </div>
-    <div class='hero-sub'>SECTOR-LEADER VALUE-CHAIN ANALYSIS &nbsp;/&nbsp; KOSPI · KOSDAQ</div>
-    """, unsafe_allow_html=True)
-
     macro_data = get_macro_data()
     if macro_data:
-        items_html = ""
-        for name, data in macro_data.items():
-            direction = "up" if data['diff'] >= 0 else "down"
+        cols = st.columns(4)
+        for idx, (name, data) in enumerate(macro_data.items()):
+            color_class = "positive-val" if data['diff'] >= 0 else "negative-val"
             sign = "+" if data['diff'] >= 0 else ""
-            items_html += f"""<div class='ticker-item'>
-                <span class='ticker-name'>{name}</span>
-                <span class='ticker-price'>{data['price']:,.2f}</span>
-                <span class='ticker-delta {direction}'>{sign}{data['diff']:,.2f} ({sign}{data['pct']:.2f}%)</span>
-            </div>"""
-        # duplicated once for a seamless looping marquee
-        st.markdown(f"""
-        <div class='ticker-tape-wrap'>
-            <div class='ticker-tape-track'>{items_html}{items_html}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
+            html = f"<div class='macro-ticker'>{name} : {data['price']:,.2f} <span class='{color_class}'>({sign}{data['pct']:.2f}%)</span></div>"
+            cols[idx].markdown(html, unsafe_allow_html=True)
+            
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.title("Institutional Equity Research Terminal")
+    
     st.markdown("### [ 나의 관심 종목 실시간 속보 ]")
     with st.container(border=True):
         col_w1, col_w2 = st.columns([8, 2])
@@ -560,25 +489,18 @@ def main():
     leader_ticker = leader_data["ticker"]
     custom_suhyeju_list = leader_data["수혜주"]
     
-    render_section_header("01", "SECTOR MACRO ANALYSIS", "섹터 매크로 진단")
+    st.markdown("### 1. Sector Macro Analysis")
     with st.container(border=True):
-        st.markdown(f"#### {theme} Macro Indicator")
+        st.markdown(f"#### {theme.split(' ')[1]} Macro Indicator")
         st.info(MARKET_THEMES[theme]["macro"])
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    render_section_header("02", "SECTOR LEADER RESEARCH", "섹터 대장주 리서치")
+    st.markdown("### 2. Sector Leader Research")
     with st.container(border=True):
         st.subheader(f"[Sector Leader] {leader_name.split(' ')[0]}")
         
-        chart_key = f"show_chart_{theme}_{leader_ticker}"
-        if chart_key not in st.session_state:
-            st.session_state[chart_key] = False
-
         if st.button(f"[{leader_name.split(' ')[0]}] 차트 및 리서치 실행", use_container_width=True):
-            st.session_state[chart_key] = True
-
-        if st.session_state[chart_key]:
             with st.spinner("마켓 데이터 로딩 중..."):
                 df = yf.Ticker(leader_ticker).history(period="6mo")
                 if not df.empty:
@@ -609,19 +531,19 @@ def main():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    render_section_header("03", "VALUE CHAIN PARTNERS", f"{leader_name.split(' ')[0]} 핵심 공급망")
+    st.markdown(f"### 3. Value Chain Partners ({leader_name.split(' ')[0]} 핵심 공급망)")
     st.caption(f"{leader_name.split(' ')[0]}와 직접적인 거래 및 수혜 관계가 있는 파트너사 목록입니다.")
     
     with st.container(border=True):
         for idx, su in enumerate(custom_suhyeju_list):
-            toggle_key = f"toggle_{theme}_{leader_ticker}_{su['ticker']}"
+            toggle_key = f"toggle_{su['ticker']}"
             if toggle_key not in st.session_state:
                 st.session_state[toggle_key] = False
                 
             col1, col2 = st.columns([6, 2])
             with col1: st.markdown(f"#### {su['name']} <span class='info-text'>({su['relation']})</span>", unsafe_allow_html=True)
             with col2: 
-                if st.button("[ 상세 리서치 토글 ]", key=f"btn_{theme}_{leader_ticker}_{su['ticker']}", use_container_width=True):
+                if st.button("[ 상세 리서치 토글 ]", key=f"btn_{su['ticker']}", use_container_width=True):
                     st.session_state[toggle_key] = not st.session_state[toggle_key]
 
             if st.session_state[toggle_key]:
@@ -657,8 +579,8 @@ def main():
                             mcap = f_info['marketCap'] / 1000000000000 if f_info['marketCap'] else 0
                             st.markdown(f"<div class='trade-box info-text'><b>[ 실시간 재무 스냅샷 ]</b> 시가총액: {mcap:.1f}조 원 | PER: {f_info['trailingPE']} | PBR: {f_info['priceToBook']} | 52주 고가: {f_info['fiftyTwoWeekHigh']} | 52주 저가: {f_info['fiftyTwoWeekLow']}</div>", unsafe_allow_html=True)
 
-                    su_ai_key = f"ai_report_{theme}_{leader_ticker}_{su['ticker']}"
-                    if st.button(f"[{su['name']}] 실시간 AI 투자 심리 분석", key=f"run_ai_{theme}_{leader_ticker}_{su['ticker']}"):
+                    su_ai_key = f"ai_report_{su['ticker']}"
+                    if st.button(f"[{su['name']}] 실시간 AI 투자 심리 분석", key=f"run_ai_{su['ticker']}"):
                         st.session_state[su_ai_key] = True
 
                     if st.session_state.get(su_ai_key, False):
@@ -667,7 +589,7 @@ def main():
                             score, bullish, bearish = generate_ai_report_parsed(su['name'], su_price, su_news)
                             
                             ac1, ac2 = st.columns([2, 5])
-                            with ac1: st.plotly_chart(draw_gauge(score), use_container_width=True, key=f"gauge_{theme}_{leader_ticker}_{su['ticker']}")
+                            with ac1: st.plotly_chart(draw_gauge(score), use_container_width=True, key=f"gauge_{su['ticker']}")
                             
                             with ac2:
                                 st.markdown(f"<div class='bullish-box'><strong>[ 긍정적 모멘텀 ]</strong><br>{bullish}</div>", unsafe_allow_html=True)
