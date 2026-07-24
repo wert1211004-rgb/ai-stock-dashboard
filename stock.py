@@ -404,6 +404,65 @@ def get_recent_news(name, display_count=3):
             return [{"title": i['title'].replace('<b>','').replace('</b>',''), "url": i['link']} for i in data['items']]
     except: return []
 
+# AI 분석 전용: 표시용 뉴스와는 별개로, 신뢰도 높은 언론사(경제/통신사 위주) 기사를
+# 우선적으로 골라서 그 기사들만 근거로 AI가 분석하도록 함. 넉넉히 받아온 뒤
+# 도메인으로 필터링하고, 모자라면 나머지 기사로 채움.
+TRUSTED_NEWS_DOMAINS = [
+    "yna.co.kr",        # 연합뉴스
+    "yonhapnews.co.kr",
+    "hankyung.com",      # 한국경제
+    "mk.co.kr",          # 매일경제
+    "sedaily.com",       # 서울경제
+    "edaily.co.kr",      # 이데일리
+    "biz.chosun.com",    # 조선비즈
+    "fnnews.com",        # 파이낸셜뉴스
+    "mt.co.kr",          # 머니투데이
+    "news1.kr",          # 뉴스1
+    "einfomax.co.kr",    # 연합인포맥스
+    "newsis.com",        # 뉴시스
+    "ytn.co.kr",         # YTN
+]
+
+def _is_trusted_source(url: str) -> bool:
+    try:
+        domain = urllib.parse.urlparse(url).netloc.replace("www.", "")
+        return any(domain == d or domain.endswith("." + d) for d in TRUSTED_NEWS_DOMAINS)
+    except Exception:
+        return False
+
+@st.cache_data(ttl=900)
+def get_reliable_news(name, count=5):
+    if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET: return []
+    encText = urllib.parse.quote(f"{name} 주식")
+    # 필터링 여지를 두기 위해 넉넉히 20건 요청
+    url = f"https://openapi.naver.com/v1/search/news.json?query={encText}&display=20&sort=sim"
+    req = urllib.request.Request(url)
+    req.add_header("X-Naver-Client-Id", NAVER_CLIENT_ID)
+    req.add_header("X-Naver-Client-Secret", NAVER_CLIENT_SECRET)
+    try:
+        with urllib.request.urlopen(req) as res:
+            data = json.loads(res.read().decode('utf-8'))
+            # 신뢰 언론사 판별은 원본 기사 링크(originallink) 기준으로 해야 정확함.
+            # 'link'는 네이버 뉴스로 호스팅된 링크(n.news.naver.com)인 경우가 많아
+            # 도메인만 보면 대부분 걸러지지 않는 문제가 있었음.
+            all_news = [
+                {
+                    "title": i['title'].replace('<b>', '').replace('</b>', ''),
+                    "url": i.get('link') or i.get('originallink'),
+                    "source_url": i.get('originallink') or i.get('link'),
+                }
+                for i in data['items']
+            ]
+    except Exception:
+        return []
+
+    trusted = [n for n in all_news if _is_trusted_source(n['source_url'])]
+    if len(trusted) >= count:
+        return trusted[:count]
+    # 신뢰 언론사 기사가 부족하면 나머지 기사로 채움 (중복 제외)
+    remaining = [n for n in all_news if n not in trusted]
+    return (trusted + remaining)[:count]
+
 @st.cache_data(ttl=900)
 def generate_ai_report_parsed(ticker_name, price, news_list):
     if not OPENAI_API_KEY:
@@ -495,7 +554,8 @@ def draw_gauge(score):
 # ==========================================
 def main():
     st.sidebar.markdown("### [ 시스템 설정 ]")
-    news_count = st.sidebar.slider("[ 표시할 뉴스 개수 ]", min_value=3, max_value=10, value=3, step=1)
+    st.sidebar.caption("표시 뉴스: 5건 고정 (참고용) / AI 분석: 신뢰도 높은 언론사 기사 5건 별도 선별")
+    news_count = 5
     st.sidebar.markdown("---")
 
     macro_data = get_macro_data()
@@ -564,10 +624,12 @@ def main():
                     st.plotly_chart(draw_professional_chart(df), use_container_width=True)
                     
                     tab1, tab2 = st.tabs(["[ AI 팩트 체크 ]", "[ 시장 공시 및 뉴스 ]"])
-                    news = get_recent_news(leader_name.split(' ')[0], news_count)
+                    news = get_recent_news(leader_name.split(' ')[0], news_count)  # 표시용 (참고용)
+                    reliable_news = get_reliable_news(leader_name.split(' ')[0], 5)  # AI 분석용 (신뢰도 상위 5건)
                     
                     with tab1:
-                        score, bullish, bearish, comment = generate_ai_report_parsed(leader_name.split(' ')[0], current_price, news)
+                        score, bullish, bearish, comment = generate_ai_report_parsed(leader_name.split(' ')[0], current_price, reliable_news)
+                        st.caption(f"※ 신뢰도 높은 언론사 기사 {len(reliable_news)}건을 근거로 분석했습니다.")
                         
                         c1, c2 = st.columns([1.5, 5.5])
                         with c1: st.plotly_chart(draw_gauge(score), use_container_width=True)
@@ -580,6 +642,7 @@ def main():
                         st.download_button("[ 리포트 텍스트 다운로드 ]", data=report_text, file_name=f"{leader_name.split(' ')[0]}_AI_Report.txt", mime="text/plain")
                             
                     with tab2:
+                        st.caption("※ 참고용 뉴스 목록입니다 (AI 분석에는 별도로 선별된 기사가 사용됩니다).")
                         for n in news: st.markdown(f"- **[{n['title']}]({n['url']})**")
                 else:
                     st.error("데이터 통신 지연. 종목 코드를 확인하십시오.")
@@ -641,8 +704,9 @@ def main():
 
                     if st.session_state.get(su_ai_key, False):
                         with st.spinner("마켓 데이터 파싱 중..."):
-                            su_news = get_recent_news(su['name'], news_count)
+                            su_news = get_reliable_news(su['name'], 5)  # 신뢰도 상위 5건 기사로 AI 분석
                             score, bullish, bearish, comment = generate_ai_report_parsed(su['name'], su_price, su_news)
+                            st.caption(f"※ 신뢰도 높은 언론사 기사 {len(su_news)}건을 근거로 분석했습니다.")
                             
                             ac1, ac2 = st.columns([2, 5])
                             with ac1: st.plotly_chart(draw_gauge(score), use_container_width=True, key=f"gauge_{su['ticker']}")
