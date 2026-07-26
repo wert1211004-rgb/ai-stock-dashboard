@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import openai
+from openai import OpenAI
 import urllib.request
 import urllib.parse
 import json
@@ -37,10 +37,21 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-NAVER_CLIENT_ID = st.secrets["NAVER_CLIENT_ID"]
-NAVER_CLIENT_SECRET = st.secrets["NAVER_CLIENT_SECRET"]
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-if OPENAI_API_KEY: openai.api_key = OPENAI_API_KEY
+# st.secrets["KEY"] 형태는 키가 없으면 즉시 KeyError로 앱을 죽여버리므로,
+# 아래쪽 코드의 "키가 없으면 더미로 대체" 로직이 실제로 동작하도록 .get()으로 접근한다.
+NAVER_CLIENT_ID = st.secrets.get("NAVER_CLIENT_ID", "")
+NAVER_CLIENT_SECRET = st.secrets.get("NAVER_CLIENT_SECRET", "")
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
+
+openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+
+_missing_keys = []
+if not (NAVER_CLIENT_ID and NAVER_CLIENT_SECRET):
+    _missing_keys.append("네이버 뉴스 API (뉴스/속보 기능 비활성화)")
+if not OPENAI_API_KEY:
+    _missing_keys.append("OpenAI API (AI 분석이 더미 데이터로 표시됨)")
+if _missing_keys:
+    st.sidebar.warning("⚠️ 일부 API 키 미설정: " + " / ".join(_missing_keys))
 
 # ==========================================
 # 2. 10개 섹터 & 대장주별 1:1 맞춤형 데이터베이스
@@ -379,7 +390,7 @@ def get_real_target_price(ticker):
     url = f"https://finance.naver.com/item/main.naver?code={code}"
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
-        res = requests.get(url, headers=headers, timeout=3)
+        res = requests.get(url, headers=headers, timeout=5)
         soup = BeautifulSoup(res.text, 'html.parser')
         target_th = soup.find("th", string="목표주가")
         if target_th:
@@ -468,7 +479,7 @@ def get_reliable_news(name, count=5):
 
 @st.cache_data(ttl=900)
 def generate_ai_report_parsed(ticker_name, price, news_list):
-    if not OPENAI_API_KEY:
+    if not openai_client:
         time.sleep(1)
         return (
             50,
@@ -492,8 +503,8 @@ def generate_ai_report_parsed(ticker_name, price, news_list):
     [COMMENT]긍정/부정 요인을 종합한 AI 총평 한 문장 (50자 이내)[/COMMENT]
     """
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
             messages=[{"role": "system", "content": prompt}],
             temperature=0.1,
             max_tokens=700,
@@ -684,15 +695,16 @@ def main():
     st.caption(f"{leader_name.split(' ')[0]}와 직접적인 거래 및 수혜 관계가 있는 파트너사 목록입니다.")
     
     with st.container(border=True):
+        scope_prefix = f"{theme}_{leader_name}"
         for idx, su in enumerate(custom_suhyeju_list):
-            toggle_key = f"toggle_{su['ticker']}"
+            toggle_key = f"toggle_{scope_prefix}_{su['ticker']}"
             if toggle_key not in st.session_state:
                 st.session_state[toggle_key] = False
                 
             col1, col2 = st.columns([6, 2])
             with col1: st.markdown(f"#### {su['name']} <span class='info-text'>({su['relation']})</span>", unsafe_allow_html=True)
             with col2: 
-                if st.button("[ 상세 리서치 토글 ]", key=f"btn_{su['ticker']}", use_container_width=True):
+                if st.button("[ 상세 리서치 토글 ]", key=f"btn_{scope_prefix}_{su['ticker']}", use_container_width=True):
                     st.session_state[toggle_key] = not st.session_state[toggle_key]
 
             if st.session_state[toggle_key]:
@@ -729,8 +741,8 @@ def main():
                             mcap = f_info['marketCap'] / 1000000000000 if f_info['marketCap'] else 0
                             st.markdown(f"<div class='trade-box info-text'><b>[ 실시간 재무 스냅샷 ]</b> 시가총액: {mcap:.1f}조 원 | PER: {f_info['trailingPE']} | PBR: {f_info['priceToBook']} | 52주 고가: {f_info['fiftyTwoWeekHigh']} | 52주 저가: {f_info['fiftyTwoWeekLow']}</div>", unsafe_allow_html=True)
 
-                    su_ai_key = f"ai_report_{su['ticker']}"
-                    if st.button(f"[{su['name']}] 실시간 AI 투자 심리 분석", key=f"run_ai_{su['ticker']}"):
+                    su_ai_key = f"ai_report_{scope_prefix}_{su['ticker']}"
+                    if st.button(f"[{su['name']}] 실시간 AI 투자 심리 분석", key=f"run_ai_{scope_prefix}_{su['ticker']}"):
                         st.session_state[su_ai_key] = True
 
                     if st.session_state.get(su_ai_key, False):
@@ -740,7 +752,7 @@ def main():
                             st.caption(f"※ 신뢰도 높은 언론사 기사 {len(su_news)}건을 근거로 분석했습니다.")
                             
                             ac1, ac2 = st.columns([2, 5])
-                            with ac1: st.plotly_chart(draw_gauge(score), use_container_width=True, key=f"gauge_{su['ticker']}")
+                            with ac1: st.plotly_chart(draw_gauge(score), use_container_width=True, key=f"gauge_{scope_prefix}_{su['ticker']}")
                             
                             with ac2:
                                 st.markdown(f"<div class='bullish-box'><strong>[ 긍정적 모멘텀 ]</strong><br>{bullish}</div>", unsafe_allow_html=True)
